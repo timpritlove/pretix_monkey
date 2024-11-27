@@ -9,11 +9,11 @@ defmodule PretixClient do
   @default_event "subscribe11"
   @default_kostenstelle1 "SUBSCRIBE11x"
   @default_kostenstelle2 ""
+  @default_belegnr "Pretix"
 
   @konto_haben_19 "4400"
   @konto_haben_7 "4300"
   @konto_soll "8603"
-  @belegnr "Pretix"
 
   def get_all_invoices(api_base_url, token) do
     invoices_url = "#{api_base_url}/invoices/"
@@ -106,7 +106,7 @@ defmodule PretixClient do
     end
   end
 
-  defp convert_invoice_to_csv_lines(invoice, items_map, kostenstelle1, kostenstelle2) do
+  defp convert_invoice_to_csv_lines(invoice, items_map, kostenstelle1, kostenstelle2, belegnr) do
     invoice["lines"]
     |> Enum.map(fn line ->
       date = invoice["date"] |> Date.from_iso8601!() |> Calendar.strftime("%d.%m.%Y")
@@ -119,7 +119,7 @@ defmodule PretixClient do
 
       [
         date,
-        @belegnr,
+        belegnr,
         "",
         format_amount(line["gross_value"]),
         "EUR",
@@ -172,7 +172,8 @@ defmodule PretixClient do
         event: :string,
         token: :string,
         cc1: :string,
-        cc2: :string
+        cc2: :string,
+        belegnr: :string
       ],
       aliases: [
         o: :output,
@@ -180,7 +181,8 @@ defmodule PretixClient do
         E: :event,
         T: :token,
         "1": :cc1,
-        "2": :cc2
+        "2": :cc2,
+        B: :belegnr
       ]
     )
 
@@ -190,6 +192,7 @@ defmodule PretixClient do
     token = opts[:token] || @default_token
     kostenstelle1 = opts[:cc1] || @default_kostenstelle1
     kostenstelle2 = opts[:cc2] || @default_kostenstelle2
+    belegnr = opts[:belegnr] || @default_belegnr
 
     # Create base URL with parameters
     api_base_url = "#{@api_url}/organizers/#{organizer}/events/#{event}"
@@ -200,7 +203,7 @@ defmodule PretixClient do
     |> Map.new()
 
     get_all_invoices(api_base_url, token)
-    |> Enum.flat_map(&convert_invoice_to_csv_lines(&1, items_map, kostenstelle1, kostenstelle2))
+    |> Enum.flat_map(&convert_invoice_to_csv_lines(&1, items_map, kostenstelle1, kostenstelle2, belegnr))
     |> write_csv(opts[:output])
   end
 end
