@@ -4,9 +4,11 @@ defmodule PretixClient do
   """
 
   @api_url "https://pretix.eu/api/v1"
+
   @default_token "51msab7jc1sthqlalwdfz10x02ri4aui2nvo80gvpqa8dqawwr429jmwh2tq2xxl"
   @default_organizer "metaebene"
   @default_event "subscribe11"
+
   @default_kostenstelle1 "SUBSCRIBE11x"
   @default_kostenstelle2 ""
   @default_belegnr "Pretix"
@@ -171,8 +173,8 @@ defmodule PretixClient do
         organizer: :string,
         event: :string,
         token: :string,
-        cc1: :string,
-        cc2: :string,
+        ks1: :string,
+        ks2: :string,
         belegnr: :string
       ],
       aliases: [
@@ -180,8 +182,8 @@ defmodule PretixClient do
         O: :organizer,
         E: :event,
         T: :token,
-        "1": :cc1,
-        "2": :cc2,
+        "1": :ks1,
+        "2": :ks2,
         B: :belegnr
       ]
     )
@@ -190,8 +192,8 @@ defmodule PretixClient do
     organizer = opts[:organizer] || @default_organizer
     event = opts[:event] || @default_event
     token = opts[:token] || @default_token
-    kostenstelle1 = opts[:cc1] || @default_kostenstelle1
-    kostenstelle2 = opts[:cc2] || @default_kostenstelle2
+    kostenstelle1 = opts[:ks1] || @default_kostenstelle1
+    kostenstelle2 = opts[:ks2] || @default_kostenstelle2
     belegnr = opts[:belegnr] || @default_belegnr
 
     # Create base URL with parameters
