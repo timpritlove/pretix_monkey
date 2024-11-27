@@ -4,23 +4,24 @@ defmodule PretixClient do
   """
 
   @api_url "https://pretix.eu/api/v1"
-  @token "51msab7jc1sthqlalwdfz10x02ri4aui2nvo80gvpqa8dqawwr429jmwh2tq2xxl"
-  @organizer "metaebene"
-  @event "subscribe11"
+  @default_token "51msab7jc1sthqlalwdfz10x02ri4aui2nvo80gvpqa8dqawwr429jmwh2tq2xxl"
+  @default_organizer "metaebene"
+  @default_event "subscribe11"
+  @default_kostenstelle1 "SUBSCRIBE11x"
+  @default_kostenstelle2 ""
 
   @konto_haben_19 "4400"
   @konto_haben_7 "4300"
   @konto_soll "8603"
-  @kostenstelle "SUBSCRIBE11x"
   @belegnr "Pretix"
 
-  def get_all_invoices do
-    invoices_url = "#{@api_url}/organizers/#{@organizer}/events/#{@event}/invoices/"
-    fetch_all_invoices(invoices_url)
+  def get_all_invoices(api_base_url, token) do
+    invoices_url = "#{api_base_url}/invoices/"
+    fetch_all_invoices(invoices_url, token)
   end
 
-  defp fetch_all_invoices(url, accumulated_invoices \\ []) do
-    headers = [{"Authorization", "Token #{@token}"}]
+  defp fetch_all_invoices(url, token, accumulated_invoices \\ []) do
+    headers = [{"Authorization", "Token #{token}"}]
 
     case Req.get(url, headers: headers) do
       {:ok, response} when response.status == 200 ->
@@ -31,7 +32,7 @@ defmodule PretixClient do
         new_accumulated_invoices = accumulated_invoices ++ results
 
         if next_page do
-          fetch_all_invoices(next_page, new_accumulated_invoices)
+          fetch_all_invoices(next_page, token, new_accumulated_invoices)
         else
           new_accumulated_invoices
         end
@@ -43,6 +44,38 @@ defmodule PretixClient do
       {:error, reason} ->
         IO.puts("HTTP error: #{reason}")
         accumulated_invoices
+    end
+  end
+
+  def get_all_items(api_base_url, token) do
+    items_url = "#{api_base_url}/items/"
+    fetch_all_items(items_url, token)
+  end
+
+  defp fetch_all_items(url, token, accumulated_items \\ []) do
+    headers = [{"Authorization", "Token #{token}"}]
+
+    case Req.get(url, headers: headers) do
+      {:ok, response} when response.status == 200 ->
+        body = response.body
+        results = body["results"]
+        next_page = body["next"]
+
+        new_accumulated_items = accumulated_items ++ results
+
+        if next_page do
+          fetch_all_items(next_page, token, new_accumulated_items)
+        else
+          new_accumulated_items
+        end
+
+      {:ok, response} ->
+        IO.puts("Failed to fetch items: HTTP #{response.status}")
+        accumulated_items
+
+      {:error, reason} ->
+        IO.puts("HTTP error: #{reason}")
+        accumulated_items
     end
   end
 
@@ -73,23 +106,30 @@ defmodule PretixClient do
     end
   end
 
-  defp convert_invoice_to_csv_lines(invoice) do
+  defp convert_invoice_to_csv_lines(invoice, items_map, kostenstelle1, kostenstelle2) do
     invoice["lines"]
     |> Enum.map(fn line ->
       date = invoice["date"] |> Date.from_iso8601!() |> Calendar.strftime("%d.%m.%Y")
+      description = case line["item"] do
+        nil -> line["description"]
+        item_id ->
+          item = Map.get(items_map, item_id)
+          if item, do: item["name"]["de-informal"] || line["description"], else: line["description"]
+      end
+
       [
         date,
-        @belegnr,  # BelegNr
-        "",  # Referenz
+        @belegnr,
+        "",
         format_amount(line["gross_value"]),
         "EUR",
-        line["description"],
+        description,
         @konto_soll,
         get_konto_haben(line["tax_rate"]),
-        get_steuersatz(line["tax_rate"]),  # Updated Steuersatz field
-        @kostenstelle,
-        "",  # Kostenstelle2
-        ""   # Notiz
+        get_steuersatz(line["tax_rate"]),
+        kostenstelle1,
+        kostenstelle2,
+        line["description"]
       ]
     end)
   end
@@ -126,12 +166,41 @@ defmodule PretixClient do
 
   def main(args) do
     {opts, _, _} = OptionParser.parse(args,
-      switches: [output: :string],
-      aliases: [o: :output]
+      switches: [
+        output: :string,
+        organizer: :string,
+        event: :string,
+        token: :string,
+        cc1: :string,
+        cc2: :string
+      ],
+      aliases: [
+        o: :output,
+        O: :organizer,
+        E: :event,
+        T: :token,
+        "1": :cc1,
+        "2": :cc2
+      ]
     )
 
-    get_all_invoices()
-    |> Enum.flat_map(&convert_invoice_to_csv_lines/1)
+    # Get values from opts with defaults
+    organizer = opts[:organizer] || @default_organizer
+    event = opts[:event] || @default_event
+    token = opts[:token] || @default_token
+    kostenstelle1 = opts[:cc1] || @default_kostenstelle1
+    kostenstelle2 = opts[:cc2] || @default_kostenstelle2
+
+    # Create base URL with parameters
+    api_base_url = "#{@api_url}/organizers/#{organizer}/events/#{event}"
+
+    # Fetch items first and create a map for easy lookup
+    items_map = get_all_items(api_base_url, token)
+    |> Enum.map(fn item -> {item["id"], item} end)
+    |> Map.new()
+
+    get_all_invoices(api_base_url, token)
+    |> Enum.flat_map(&convert_invoice_to_csv_lines(&1, items_map, kostenstelle1, kostenstelle2))
     |> write_csv(opts[:output])
   end
 end
