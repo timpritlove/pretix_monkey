@@ -5,10 +5,6 @@ defmodule PretixClient do
 
   @api_url "https://pretix.eu/api/v1"
 
-  @default_pretix_token "51msab7jc1sthqlalwdfz10x02ri4aui2nvo80gvpqa8dqawwr429jmwh2tq2xxl"
-  @default_pretix_organizer "metaebene"
-  @default_pretix_event "subscribe11"
-
   @default_kostenstelle1 ""
   @default_kostenstelle2 ""
   @default_belegnr "Pretix"
@@ -196,9 +192,9 @@ defmodule PretixClient do
     )
 
     # Get values from opts with environment variables and defaults as fallbacks
-    organizer = opts[:organizer] || System.get_env("PRETIX_ORGANIZER") || @default_pretix_organizer
-    event = opts[:event] || System.get_env("PRETIX_EVENT") || @default_pretix_event
-    token = opts[:token] || System.get_env("PRETIX_TOKEN") || @default_pretix_token
+    organizer = opts[:organizer] || System.get_env("PRETIX_ORGANIZER")
+    event = opts[:event] || System.get_env("PRETIX_EVENT")
+    token = opts[:token] || System.get_env("PRETIX_TOKEN")
     kostenstelle1 = opts[:ks1] || @default_kostenstelle1
     kostenstelle2 = opts[:ks2] || @default_kostenstelle2
     belegnr = opts[:belegnr] || @default_belegnr
