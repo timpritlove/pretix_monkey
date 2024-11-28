@@ -15,7 +15,7 @@ defmodule PretixClient do
 
   @konto_haben_19 "4400"
   @konto_haben_7 "4300"
-  @konto_soll "8603"
+  @default_verrechnungskonto "8603"
 
   def get_all_invoices(api_base_url, token) do
     invoices_url = "#{api_base_url}/invoices/"
@@ -108,7 +108,7 @@ defmodule PretixClient do
     end
   end
 
-  defp convert_invoice_to_csv_lines(invoice, items_map, kostenstelle1, kostenstelle2, belegnr) do
+  defp convert_invoice_to_csv_lines(invoice, items_map, kostenstelle1, kostenstelle2, belegnr, verrechnungskonto) do
     invoice["lines"]
     |> Enum.map(fn line ->
       date = invoice["date"] |> Date.from_iso8601!() |> Calendar.strftime("%d.%m.%Y")
@@ -126,7 +126,7 @@ defmodule PretixClient do
         format_amount(line["gross_value"]),
         "EUR",
         description,
-        @konto_soll,
+        verrechnungskonto,
         get_konto_haben(line["tax_rate"]),
         get_steuersatz(line["tax_rate"]),
         kostenstelle1,
@@ -175,7 +175,8 @@ defmodule PretixClient do
         token: :string,
         ks1: :string,
         ks2: :string,
-        belegnr: :string
+        belegnr: :string,
+        verrechnungskonto: :string
       ],
       aliases: [
         o: :output,
@@ -184,7 +185,8 @@ defmodule PretixClient do
         T: :token,
         "1": :ks1,
         "2": :ks2,
-        B: :belegnr
+        B: :belegnr,
+        V: :verrechnungskonto
       ]
     )
 
@@ -195,6 +197,7 @@ defmodule PretixClient do
     kostenstelle1 = opts[:ks1] || @default_kostenstelle1
     kostenstelle2 = opts[:ks2] || @default_kostenstelle2
     belegnr = opts[:belegnr] || @default_belegnr
+    verrechnungskonto = opts[:verrechnungskonto] || @default_verrechnungskonto
 
     # Create base URL with parameters
     api_base_url = "#{@api_url}/organizers/#{organizer}/events/#{event}"
@@ -205,7 +208,7 @@ defmodule PretixClient do
     |> Map.new()
 
     get_all_invoices(api_base_url, token)
-    |> Enum.flat_map(&convert_invoice_to_csv_lines(&1, items_map, kostenstelle1, kostenstelle2, belegnr))
+    |> Enum.flat_map(&convert_invoice_to_csv_lines(&1, items_map, kostenstelle1, kostenstelle2, belegnr, verrechnungskonto))
     |> write_csv(opts[:output])
   end
 end
