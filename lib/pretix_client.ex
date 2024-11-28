@@ -1,6 +1,25 @@
 defmodule PretixClient do
   @moduledoc """
   A client for the Pretix REST API that fetches all invoices and exports them to CSV.
+
+  Usage:
+    pretix_client [options]
+
+  Options:
+    -o, --output            Output file path (defaults to stdout)
+    -O, --organizer         Pretix organizer slug (or PRETIX_ORGANIZER env var)
+    -E, --event            Pretix event slug (or PRETIX_EVENT env var)
+    -T, --token            Pretix API token (or PRETIX_TOKEN env var)
+    -1, --ks1              Kostenstelle1 (optional)
+    -2, --ks2              Kostenstelle2 (optional)
+    -B, --belegnr          BelegNr prefix (defaults to "Pretix")
+    -V, --verrechnungskonto Account number (defaults to "8603")
+    -K, --kontenrahmen     Chart of accounts, "skr03" or "skr04" (defaults to "skr04")
+
+  Environment:
+    PRETIX_ORGANIZER      Alternative to --organizer
+    PRETIX_EVENT         Alternative to --event
+    PRETIX_TOKEN         Alternative to --token
   """
 
   @api_url "https://pretix.eu/api/v1"
