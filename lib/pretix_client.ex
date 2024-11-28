@@ -13,8 +13,11 @@ defmodule PretixClient do
   @default_kostenstelle2 ""
   @default_belegnr "Pretix"
 
-  @konto_haben_19 "4400"
-  @konto_haben_7 "4300"
+  @konto_haben %{
+    "skr03" => %{"19" => "8400", "7" => "8300"},
+    "skr04" => %{"19" => "4400", "7" => "4300"}
+  }
+  @default_kontenrahmen "skr04"
   @default_verrechnungskonto "8603"
 
   def get_all_invoices(api_base_url, token) do
@@ -92,10 +95,10 @@ defmodule PretixClient do
     |> String.replace(".", ",")
   end
 
-  defp get_konto_haben(tax_rate) do
+  defp get_konto_haben(tax_rate, kontenrahmen) do
     case tax_rate do
-      "19.00" -> @konto_haben_19
-      "7.00" -> @konto_haben_7
+      "19.00" -> @konto_haben[String.downcase(kontenrahmen)]["19"]
+      "7.00" -> @konto_haben[String.downcase(kontenrahmen)]["7"]
       _ -> ""
     end
   end
@@ -108,7 +111,7 @@ defmodule PretixClient do
     end
   end
 
-  defp convert_invoice_to_csv_lines(invoice, items_map, kostenstelle1, kostenstelle2, belegnr, verrechnungskonto) do
+  defp convert_invoice_to_csv_lines(invoice, items_map, kostenstelle1, kostenstelle2, belegnr, verrechnungskonto, kontenrahmen) do
     invoice["lines"]
     |> Enum.map(fn line ->
       date = invoice["date"] |> Date.from_iso8601!() |> Calendar.strftime("%d.%m.%Y")
@@ -127,7 +130,7 @@ defmodule PretixClient do
         "EUR",
         description,
         verrechnungskonto,
-        get_konto_haben(line["tax_rate"]),
+        get_konto_haben(line["tax_rate"], kontenrahmen),
         get_steuersatz(line["tax_rate"]),
         kostenstelle1,
         kostenstelle2,
@@ -176,7 +179,8 @@ defmodule PretixClient do
         ks1: :string,
         ks2: :string,
         belegnr: :string,
-        verrechnungskonto: :string
+        verrechnungskonto: :string,
+        kontenrahmen: :string
       ],
       aliases: [
         o: :output,
@@ -186,7 +190,8 @@ defmodule PretixClient do
         "1": :ks1,
         "2": :ks2,
         B: :belegnr,
-        V: :verrechnungskonto
+        V: :verrechnungskonto,
+        K: :kontenrahmen
       ]
     )
 
@@ -207,8 +212,16 @@ defmodule PretixClient do
     |> Enum.map(fn item -> {item["id"], item} end)
     |> Map.new()
 
+    kontenrahmen = opts[:kontenrahmen] || @default_kontenrahmen
+
+    # Validate kontenrahmen
+    if String.downcase(kontenrahmen) not in ["skr03", "skr04"] do
+      IO.puts("Error: Kontenrahmen must be either 'skr03' or 'skr04'")
+      System.halt(1)
+    end
+
     get_all_invoices(api_base_url, token)
-    |> Enum.flat_map(&convert_invoice_to_csv_lines(&1, items_map, kostenstelle1, kostenstelle2, belegnr, verrechnungskonto))
+    |> Enum.flat_map(&convert_invoice_to_csv_lines(&1, items_map, kostenstelle1, kostenstelle2, belegnr, verrechnungskonto, kontenrahmen))
     |> write_csv(opts[:output])
   end
 end
