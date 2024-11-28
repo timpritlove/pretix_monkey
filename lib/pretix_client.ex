@@ -9,7 +9,7 @@ defmodule PretixClient do
   @default_organizer "metaebene"
   @default_event "subscribe11"
 
-  @default_kostenstelle1 "SUBSCRIBE11x"
+  @default_kostenstelle1 ""
   @default_kostenstelle2 ""
   @default_belegnr "Pretix"
 
