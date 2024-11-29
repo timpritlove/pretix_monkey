@@ -1,14 +1,14 @@
-defmodule PretixClient.MixProject do
+defmodule PretixMonkey.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :pretix_client,
+      app: :pretix_monkey,
       version: "0.1.0",
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      escript: [main_module: PretixClient]
+      escript: [main_module: PretixMonkey]
     ]
   end
 

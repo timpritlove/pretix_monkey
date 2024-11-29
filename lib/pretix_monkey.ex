@@ -1,9 +1,9 @@
-defmodule PretixClient do
+defmodule PretixMonkey do
   @moduledoc """
   A client for the Pretix REST API that fetches all invoices and exports them to CSV.
 
   Usage:
-    pretix_client [options]
+    pretix_monkey [options]
 
   Options:
     -o, --output            Output file path (defaults to stdout)

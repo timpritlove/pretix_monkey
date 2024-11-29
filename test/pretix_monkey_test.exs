@@ -1,8 +1,8 @@
-defmodule PretixClientTest do
+defmodule PretixMonkeyTest do
   use ExUnit.Case
-  doctest PretixClient
+  doctest PretixMonkey
 
   test "greets the world" do
-    assert PretixClient.hello() == :world
+    assert PretixMonkey.hello() == :world
   end
 end
