@@ -47,10 +47,10 @@ Für alle anderen Optionen können Standardwerte verwendet werden. In der Regel 
     PRETIX_ORGANIZER      Alternative to --organizer
     PRETIX_EVENT         Alternative to --event
     PRETIX_TOKEN         Alternative to --token
-  """
+```
 
 
 # Ergebnis
 
-Das Ergebnis ist eine CSV-Datei, welche die Rechnungsdaten enthält. Diese können dann in die Buchhaltung importiert werden.
+Das Ergebnis ist eine CSV-Datei, welche die Rechnungsdaten enthält. Diese können dann in die Buchhaltung importiert werden. Die derzeitige Struktur der CSV-Datei ist für den Import in der Buchhaltung von "MonKey Office" vorgesehen, kann aber je nach Bedarf angepasst werden.
 
