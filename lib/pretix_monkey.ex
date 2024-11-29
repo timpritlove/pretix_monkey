@@ -13,7 +13,7 @@ defmodule PretixMonkey do
     -1, --ks1              Kostenstelle1 (optional)
     -2, --ks2              Kostenstelle2 (optional)
     -B, --belegnr          BelegNr prefix (defaults to "Pretix")
-    -V, --verrechnungskonto Account number (defaults to "8603")
+    -V, --verrechnungskonto Account number (defaults to "9000")
     -K, --kontenrahmen     Chart of accounts, "skr03" or "skr04" (defaults to "skr04")
 
   Environment:
@@ -33,7 +33,7 @@ defmodule PretixMonkey do
     "skr04" => %{"19" => "4400", "7" => "4300"}
   }
   @default_kontenrahmen "skr04"
-  @default_verrechnungskonto "8603"
+  @default_verrechnungskonto "9000"
 
   def get_all_invoices(api_base_url, token) do
     invoices_url = "#{api_base_url}/invoices/"
