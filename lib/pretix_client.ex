@@ -126,20 +126,38 @@ defmodule PretixClient do
     end
   end
 
-  defp convert_invoice_to_csv_lines(invoice, items_map, kostenstelle1, kostenstelle2, belegnr, verrechnungskonto, kontenrahmen) do
+  defp convert_invoice_to_csv_lines(
+         invoice,
+         items_map,
+         kostenstelle1,
+         kostenstelle2,
+         belegnr,
+         verrechnungskonto,
+         kontenrahmen
+       ) do
+    # Get the invoice number from the invoice data
+    invoice_number = "#{belegnr}-#{invoice["number"]}"
+
     invoice["lines"]
     |> Enum.map(fn line ->
       date = invoice["date"] |> Date.from_iso8601!() |> Calendar.strftime("%d.%m.%Y")
-      description = case line["item"] do
-        nil -> line["description"]
-        item_id ->
-          item = Map.get(items_map, item_id)
-          if item, do: item["name"]["de-informal"] || line["description"], else: line["description"]
-      end
+
+      description =
+        case line["item"] do
+          nil ->
+            line["description"]
+
+          item_id ->
+            item = Map.get(items_map, item_id)
+
+            if item,
+              do: item["name"]["de-informal"] || line["description"],
+              else: line["description"]
+        end
 
       [
         date,
-        belegnr,
+        invoice_number,
         "",
         format_amount(line["gross_value"]),
         "EUR",
@@ -177,6 +195,7 @@ defmodule PretixClient do
       nil ->
         # Write to stdout
         IO.write(csv_string)
+
       filename ->
         # Write to file
         File.write!(filename, csv_string)
@@ -185,30 +204,31 @@ defmodule PretixClient do
   end
 
   def main(args) do
-    {opts, _, _} = OptionParser.parse(args,
-      switches: [
-        output: :string,
-        organizer: :string,
-        event: :string,
-        token: :string,
-        ks1: :string,
-        ks2: :string,
-        belegnr: :string,
-        verrechnungskonto: :string,
-        kontenrahmen: :string
-      ],
-      aliases: [
-        o: :output,
-        O: :organizer,
-        E: :event,
-        T: :token,
-        "1": :ks1,
-        "2": :ks2,
-        B: :belegnr,
-        V: :verrechnungskonto,
-        K: :kontenrahmen
-      ]
-    )
+    {opts, _, _} =
+      OptionParser.parse(args,
+        switches: [
+          output: :string,
+          organizer: :string,
+          event: :string,
+          token: :string,
+          ks1: :string,
+          ks2: :string,
+          belegnr: :string,
+          verrechnungskonto: :string,
+          kontenrahmen: :string
+        ],
+        aliases: [
+          o: :output,
+          O: :organizer,
+          E: :event,
+          T: :token,
+          "1": :ks1,
+          "2": :ks2,
+          B: :belegnr,
+          V: :verrechnungskonto,
+          K: :kontenrahmen
+        ]
+      )
 
     # Get values from opts with environment variables and defaults as fallbacks
     organizer = opts[:organizer] || System.get_env("PRETIX_ORGANIZER")
@@ -223,9 +243,10 @@ defmodule PretixClient do
     api_base_url = "#{@api_url}/organizers/#{organizer}/events/#{event}"
 
     # Fetch items first and create a map for easy lookup
-    items_map = get_all_items(api_base_url, token)
-    |> Enum.map(fn item -> {item["id"], item} end)
-    |> Map.new()
+    items_map =
+      get_all_items(api_base_url, token)
+      |> Enum.map(fn item -> {item["id"], item} end)
+      |> Map.new()
 
     kontenrahmen = opts[:kontenrahmen] || @default_kontenrahmen
 
@@ -236,7 +257,17 @@ defmodule PretixClient do
     end
 
     get_all_invoices(api_base_url, token)
-    |> Enum.flat_map(&convert_invoice_to_csv_lines(&1, items_map, kostenstelle1, kostenstelle2, belegnr, verrechnungskonto, kontenrahmen))
+    |> Enum.flat_map(
+      &convert_invoice_to_csv_lines(
+        &1,
+        items_map,
+        kostenstelle1,
+        kostenstelle2,
+        belegnr,
+        verrechnungskonto,
+        kontenrahmen
+      )
+    )
     |> write_csv(opts[:output])
   end
 end
